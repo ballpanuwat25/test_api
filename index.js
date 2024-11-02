@@ -20,10 +20,26 @@ const db_config = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: {
-    rejectUnauthorized: true, // Adjust this according to your requirements
-  }
 };
+
+async function testConnection() {
+  let connection;
+  try {
+      console.log('DB_HOST:', process.env.DB_HOST); // Debugging line
+      console.log('DB_USER:', process.env.DB_USER); // Debugging line
+
+      connection = await mysql.createConnection(db_config);
+      console.log('Connection successful!');
+  } catch (err) {
+      console.error('Error connecting to the database:', err.message);
+  } finally {
+      if (connection) {
+          await connection.end();
+      }
+  }
+}
+
+testConnection();
 
 const swaggerOptions = {
   swaggerDefinition: {
@@ -79,6 +95,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
  *         description: Error retrieving data from the database
  */
 app.get('/get-exercise', async (req, res) => {
+  console.log('GET /get-exercise');
+
   let params = req.query;
   let category = params.category;
   let connection;
