@@ -15,12 +15,12 @@ app.use(cors());
 
 const mysql = require('mysql2/promise');
 
-const db = mysql.createPool({
+const db_config = {
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+  database: process.env.DB_NAME
+};
 
 const swaggerOptions = {
   swaggerDefinition: {
@@ -78,6 +78,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.get('/get-exercise', async (req, res) => {
   let params = req.query;
   let category = params.category;
+  let connection;
 
   if(!category) {
     res.status(400).send('Missing required parameter: category');
@@ -85,8 +86,10 @@ app.get('/get-exercise', async (req, res) => {
   }
 
   try {
+    connection = await mysql.createConnection(db_config);
+
     // Query ข้อมูลจากฐานข้อมูล
-    const [results] = await db.query('SELECT * FROM Numericalmethod WHERE category = ?', [category]);
+    const [results] = await connection.execute('SELECT * FROM Numericalmethod WHERE category = ?', [category]);
     if(results.length === 0) {
       res.status(404).send('Not found');
       return;
@@ -97,6 +100,10 @@ app.get('/get-exercise', async (req, res) => {
   } catch (err) {
     console.error('Error querying the database:', err.message);
     res.status(500).send('Error retrieving data from the database');
+  } finally {
+    if (connection) {
+        await connection.end(); // ปิดการเชื่อมต่อ
+    }
   }
 });
 
